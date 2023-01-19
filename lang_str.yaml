@@ -1,0 +1,124 @@
+# Usage Guide:
+# Use the English strings as a base for any translation.
+# >- allows use of characters that normally would be used in yaml, like : and "", ''.
+# This is the syntax to follow:
+# 
+# eng:
+#   string_name: text of the string
+#   string_name_with_special_character: >-
+#     you : can put : all kinds of stuff : here!!!!'''''''
+#
+
+# English
+eng:
+  language: English
+  title: Render with Diff-SVC
+  info_title: Model Information
+  info_lbl: >-
+    Singer ID:
+  info_hz: >-
+    Sample Rate:
+  model_info: About Singer
+  browse: Browse
+  sgr_dir: >-
+    Singer Directory:
+  sgr_dir_des: Select your singers directory.
+  sgr_dir_hint: Verify your singer directory contains a 'config.yaml' file, as well as a '.ckpt' file.
+  wav_dir: >-
+    File for Conversion:
+  wav_dir_des: >-
+    Select the '.wav' file to convert.
+  wav_exp: >-
+    Render Location:
+  wav_exp_hint: >-
+   Select your '.wav' export location.
+  parameter: Render Parameters
+  adv_parameter: Advanced Parameters
+  keyshift: >-
+    Key Shift:
+  keyshift_hint: Changes the key of the final render in semitones. Supports negative input.
+  pndm_lbl: >-
+    Render Speedup:
+  pndm_hint: Adjusts the rendering speed, but lowers audio quality. 0 is recommended.
+  crepe_lbl: Use Crepe
+  crepe_hint: >-
+    Uses Crepe for F0 estimation. If false, uses parselmouth.
+  pe_lbl: use_pe
+  pe_hint: Uses F0 extracted from the mel spectrogram. Changes very little. Automatically disabled for 44.1kHz models.
+  gtm_lbl: use_gt_mel
+  gtm_hint: Renders with a bit of a mix of the original and the rendered. If true, set key to 0 as changing pitch is not supported.
+  thre_lbl: >-
+    thre:
+  thre_hint: Crepe's noise filtering. If the input audio is clean, you can raise it. Otherwise, keep it at the default.
+  noise_lbl: >-
+    add_noise_step:
+  noise_hint: Related to use_gt_mel. 1=input voice only. 1000=just output voice. 300=roughly equal input/output.
+  directory_ask: >-
+    Select your Diff-SVC Model's file directory.
+  wav_file_ask: >-
+    Select the '.wav' file you would like to convert.
+  render: Render
+  wav_save_ask: >-
+    Select your '.wav' export location.
+  info_table1: Config Key
+  info_table2: Info
+  model_load_error: >-
+    Model was not found in the chosen directory. Please choose a valid model directory.
+  model_load_error_title: Model Load Error
+
+# 日本語
+jpn:
+  language: 日本語
+  title: Diff-SVCで合成
+  info_title: モデルについて
+  info_lbl: >-
+    モデルID:
+  info_hz: >-
+    サンプリング周波数:
+  model_info: モデルについて
+  browse: 選択
+  sgr_dir: >-
+    モデルのディレクトリ:
+  sgr_dir_des: モデルのディレクトリを選択します。
+  sgr_dir_hint: モデルのディレクトリに「config.yaml」と「.ckpt」ファイルがあることを確認します。
+  wav_dir: >-
+    転換のファイル:
+  wav_dir_des: >-
+    '.wav'ファイルは転換することが選択します。
+  wav_exp: >-
+    転換のディレクトリ:
+  wav_exp_hint: >-
+   '.wav'ファイルのエクスポート場所を選択します。
+  parameter: パラメータ
+  adv_parameter: 先進パラメータ
+  keyshift: >-
+    キーシフト:
+  keyshift_hint: 合成のキーを半音単位で変更します。マイナス入力OK。
+  pndm_lbl: >-
+    スピードアップ:
+  pndm_hint: 合成スピードを調整しますが、温室は低下します。「0」はおすすめです。
+  crepe_lbl: crepeで使用
+  crepe_hint: >-
+    F0推定にcrepeを使用します。Falseの場合、parselmouthを使用します。
+  pe_lbl: use_pe
+  pe_hint: melスペクトログラムから抽出されたF0を使用します。ほとんど変化しません。44.1kHzのモデルは自動的に無効になります。
+  gtm_lbl: use_gt_mel
+  gtm_hint: オリジナル音と拡散合成の混合で合成します。ピッチの変更はサポートされていないため、Trueの場合、キーを「0」に設定します。
+  thre_lbl: >-
+    thre:
+  thre_hint: crepeのノイズフィルター。音声がきれいな場合、値を上げることができます。そうでないは、デフォルトのままにしてください。
+  noise_lbl: >-
+    add_noise_step:
+  noise_hint: use_gt_melに関連します。 1=音声のみ。 1000=合成のみ。 300=音声と合成がほぼ同じです。
+  directory_ask: >-
+    Diff-SVCモデルのディレクトリを選択します。
+  wav_file_ask: >-
+    合成したい'.wav'ファイルを選択します。
+  render: 合成
+  wav_save_ask: >-
+    '.wav'ファイルのエクスポート場所を選択します。
+  info_table1: 設定キー
+  info_table2: 情報
+  model_load_error: >-
+    選択されたディレクトリにモデルが見つかりませんでした。有効なモデルディレクトリを選択してください。
+  model_load_error_title: モデルのロードエラー
