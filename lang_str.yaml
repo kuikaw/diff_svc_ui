@@ -122,3 +122,60 @@ jpn:
   model_load_error: >-
     選択されたディレクトリにモデルが見つかりませんでした。有効なモデルディレクトリを選択してください。
   model_load_error_title: モデルのロードエラー
+  
+# Brazilian Portuguese
+ptbr:
+  language: Português Brasileiro
+  title: Renderizar com Diff-SVC
+  info_title: Iformação do Modelo
+  info_lbl: >-
+    ID da Voz:
+  info_hz: >-
+    Taxa de Amostragem:
+  model_info: Sobre a Voz
+  browse: Pesquisar
+  sgr_dir: >-
+    Diretório de Voz:
+  sgr_dir_des: Selecione seu diretório de voz.
+  sgr_dir_hint: Verifique se o diretório de voz contém um arquivo 'config.yaml', e um arquivo '.ckpt'.
+  wav_dir: >-
+    Arquivo para Conversão:
+  wav_dir_des: >-
+    Selecione o arquivo '.wav' para converter.
+  wav_exp: >-
+    Local de Renderização:
+  wav_exp_hint: >-
+   Selecione o local de exportação '.wav'.
+  parameter: Parâmetros de Renderização
+  adv_parameter: Parâmetros Avançados
+  keyshift: >-
+    Mudança de Chave:
+  keyshift_hint: Altera a tonalidade da renderização final em semitons. Suporta entrada negativa.
+  pndm_lbl: >-
+    Aceleração de Renderização:
+  pndm_hint: Ajusta a velocidade de renderização, mas reduz a qualidade do áudio. 0 é recomendado.
+  crepe_lbl: Use Crepe
+  crepe_hint: >-
+    Usa Crepe para estimativa de F0. Se falso, usa parselmouth.
+  pe_lbl: use_pe
+  pe_hint: Usa F0 extraído do espectrograma de mel. Muda muito pouco. Desativado automaticamente para modelos de 44,1 kHz.
+  gtm_lbl: use_gt_mel
+  gtm_hint: Renderiza com um pouco de mistura do original e do renderizado. Se verdadeiro, defina a chave como 0, pois a alteração do tom não é suportada.
+  thre_lbl: >-
+    thre:
+  thre_hint: Filtragem de ruído do Crepe. Se o áudio de entrada estiver limpo, você pode aumentá-lo. Caso contrário, mantenha-o no padrão.
+  noise_lbl: >-
+    add_noise_step:
+  noise_hint: Relacionado a use_gt_mel. 1=somente voz de entrada. 1000=apenas saída de voz. 300=entrada/saída aproximadamente iguais.
+  directory_ask: >-
+    Selecione o diretório de arquivos do modelo Diff-SVC.
+  wav_file_ask: >-
+    Selecione o arquivo '.wav' que você gostaria de converter.
+  render: Renderizar
+  wav_save_ask: >-
+    Selecione o local de exportação '.wav'.
+  info_table1: Tecla de Configuração
+  info_table2: Informação
+  model_load_error: >-
+    O modelo não foi encontrado no diretório escolhido. Escolha um diretório de modelo válido.
+  model_load_error_title: Erro de Carregamento do Modelo
