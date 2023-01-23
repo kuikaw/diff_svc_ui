@@ -21,7 +21,6 @@ from neu_tools.neudiff import *
 def verify_setup():
 	if os.path.exists('checkpoints'):
 		print('Checkpoints OK!')
-		pass
 	else:
 		print('Checkpoints are missing. Please check checkpoints folder!')
 		sys.exit()

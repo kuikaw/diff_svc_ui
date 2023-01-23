@@ -34,10 +34,8 @@ if __name__ == '__main__':
     infer_tool.fill_a_to_b(trans, file_names)
 
     model = Svc(project_name, config_path, hubert_gpu, model_path)
-    count = 0
-    for f_name, tran in zip(file_names, trans):
+    for count, (f_name, tran) in enumerate(zip(file_names, trans), start=1):
         print(f_name)
         run_clip(model, key=tran, acc=accelerate, use_crepe=False, thre=0.05, use_pe=False, use_gt_mel=False,
                  add_noise_step=500, f_name=f_name, project_name=project_name)
-        count += 1
         print(f"process:{round(count * 100 / len(file_names), 2)}%")

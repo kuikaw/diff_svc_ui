@@ -41,8 +41,7 @@ def linear_beta_schedule(timesteps, max_beta=hparams.get('max_beta', 0.01)):
     """
     linear schedule
     """
-    betas = np.linspace(1e-4, max_beta, timesteps)
-    return betas
+    return np.linspace(1e-4, max_beta, timesteps)
 
 
 def cosine_beta_schedule(timesteps, s=0.008):
@@ -78,11 +77,10 @@ class GaussianDiffusion(nn.Module):
 
         if exists(betas):
             betas = betas.detach().cpu().numpy() if isinstance(betas, torch.Tensor) else betas
+        elif 'schedule_type' in hparams.keys():
+            betas = beta_schedule[hparams['schedule_type']](timesteps)
         else:
-            if 'schedule_type' in hparams.keys():
-                betas = beta_schedule[hparams['schedule_type']](timesteps)
-            else:
-                betas = cosine_beta_schedule(timesteps)
+            betas = cosine_beta_schedule(timesteps)
 
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
@@ -232,8 +230,7 @@ class GaussianDiffusion(nn.Module):
         ret = self.fs2(hubert, mel2ph, spk_embed, None, f0, uv, energy,
                        skip_decoder=True, infer=infer, **kwargs)
         cond = ret['decoder_inp'].transpose(1, 2)
-        b, *_, device = *hubert.shape, hubert.device
-
+        ret
         if not infer:
             Batch2Loss.module4(
                 self.p_losses,
@@ -252,7 +249,7 @@ class GaussianDiffusion(nn.Module):
                 shape = (cond.shape[0], 1, self.mel_bins, cond.shape[2])
                 x = torch.randn(shape, device=device)
             '''
-            if 'use_gt_mel' in kwargs.keys() and kwargs['use_gt_mel']:
+            if 'use_gt_mel' in kwargs and kwargs['use_gt_mel']:
                 t =kwargs['add_noise_step']
                 print('===>using ground truth mel as start, please make sure parameter "key==0" !')
                 fs2_mels = ref_mels
@@ -274,7 +271,7 @@ class GaussianDiffusion(nn.Module):
                     x = self.p_sample_plms(x, torch.full((b,), i, device=device, dtype=torch.long), iteration_interval,
                                            cond)
             else:
-                for i in tqdm(reversed(range(0, t)), desc='sample time step', total=t):
+                for i in tqdm(reversed(range(t)), desc='sample time step', total=t):
                     x = self.p_sample(x, torch.full((b,), i, device=device, dtype=torch.long), cond)
             x = x[:, 0].transpose(1, 2)
             if mel2ph is not None:  # for singing

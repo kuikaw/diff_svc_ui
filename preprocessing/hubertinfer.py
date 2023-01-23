@@ -12,7 +12,7 @@ from utils.hparams import hparams
 
 class Hubertencoder():
     def __init__(self, pt_path='checkpoints/hubert/hubert_soft.pt'):
-        if not 'use_vec' in hparams.keys():
+        if 'use_vec' not in hparams.keys():
             hparams['use_vec'] = False
         if hparams['use_vec']:
             pt_path = "checkpoints/vec/checkpoint_best_legacy_500.pt"
@@ -34,9 +34,8 @@ class Hubertencoder():
         else:
             npy_path = Path(wav_path).with_suffix('.npy')
         if os.path.exists(npy_path):
-            units = np.load(str(npy_path))
+            return np.load(str(npy_path))
         elif hparams['use_vec']:
-            units = get_vec_units(self.hbt_model, wav_path, self.dev).cpu().numpy()[0]
+            return get_vec_units(self.hbt_model, wav_path, self.dev).cpu().numpy()[0]
         else:
-            units = get_units(self.hbt_model, wav_path, self.dev).cpu().numpy()[0]
-        return units  # [T,256]
+            return get_units(self.hbt_model, wav_path, self.dev).cpu().numpy()[0]

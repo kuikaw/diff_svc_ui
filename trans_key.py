@@ -16,8 +16,7 @@ def move_key(raw_data, mv_key):
     while new_head_index > 11:
         body += 1
         new_head_index -= 12
-    result_data = head_list[new_head_index] + str(body)
-    return result_data
+    return head_list[new_head_index] + str(body)
 
 
 def trans_key(raw_data, key):
@@ -43,19 +42,18 @@ def trans_key(raw_data, key):
 
 
 key = -6
-f_w = open("raw.txt", "w", encoding='utf-8')
-with open("result.txt", "r", encoding='utf-8') as f:
-    raw_data = f.readlines()
-    for raw in raw_data:
-        raw_list = raw.split("|")
-        new_note_seq_list = []
-        for note_seq in raw_list[3].split(" "):
-            if note_seq != "rest":
-                note_seq = note_seq.split("/")[0] if "/" in note_seq else note_seq
-                new_note_seq = move_key(note_seq, key)
-                new_note_seq_list.append(new_note_seq)
-            else:
-                new_note_seq_list.append(note_seq)
-        raw_list[3] = " ".join(new_note_seq_list)
-        f_w.write("|".join(raw_list))
-f_w.close()
+with open("raw.txt", "w", encoding='utf-8') as f_w:
+    with open("result.txt", "r", encoding='utf-8') as f:
+        raw_data = f.readlines()
+        for raw in raw_data:
+            raw_list = raw.split("|")
+            new_note_seq_list = []
+            for note_seq in raw_list[3].split(" "):
+                if note_seq != "rest":
+                    note_seq = note_seq.split("/")[0] if "/" in note_seq else note_seq
+                    new_note_seq = move_key(note_seq, key)
+                    new_note_seq_list.append(new_note_seq)
+                else:
+                    new_note_seq_list.append(note_seq)
+            raw_list[3] = " ".join(new_note_seq_list)
+            f_w.write("|".join(raw_list))

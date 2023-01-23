@@ -32,10 +32,7 @@ def level2db(levels, eps=1e-12):
 
 
 def _apply_slice(audio, begin, end):
-    if len(audio.shape) > 1:
-        return audio[:, begin: end]
-    else:
-        return audio[begin: end]
+    return audio[:, begin: end] if len(audio.shape) > 1 else audio[begin: end]
 
 
 class Slicer:
@@ -81,8 +78,11 @@ class Slicer:
                     rms_db_left = level2db(_window_rms(samples[left: left + sil_left_n], win_sz=self.win_sn))
                     split_win_l = left + np.argmin(rms_db_left)
                     split_loc_l = split_win_l + np.argmin(abs_amp[split_win_l: split_win_l + self.win_sn])
-                if len(sil_tags) != 0 and split_loc_l - sil_tags[-1][1] < self.min_samples and right < win_max_db.shape[
-                    0] - 1:
+                if (
+                    sil_tags
+                    and split_loc_l - sil_tags[-1][1] < self.min_samples
+                    and right < win_max_db.shape[0] - 1
+                ):
                     right += 1
                     left = right
                     continue
@@ -103,26 +103,22 @@ class Slicer:
             split_win_l = left + np.argmin(rms_db_left)
             split_loc_l = split_win_l + np.argmin(abs_amp[split_win_l: split_win_l + self.win_sn])
             sil_tags.append((split_loc_l, samples.shape[0]))
-        if len(sil_tags) == 0:
+        if not sil_tags:
             return {"0": {"slice": False, "split_time": f"0,{len(audio)}"}}
-        else:
-            chunks = []
-            # 第一段静音并非从头开始，补上有声片段
-            if sil_tags[0][0]:
-                chunks.append({"slice": False, "split_time": f"0,{sil_tags[0][0]}"})
-            for i in range(0, len(sil_tags)):
-                # 标识有声片段（跳过第一段）
-                if i:
-                    chunks.append({"slice": False, "split_time": f"{sil_tags[i - 1][1]},{sil_tags[i][0]}"})
-                # 标识所有静音片段
-                chunks.append({"slice": True, "split_time": f"{sil_tags[i][0]},{sil_tags[i][1]}"})
-            # 最后一段静音并非结尾，补上结尾片段
-            if sil_tags[-1][1] != len(audio):
-                chunks.append({"slice": False, "split_time": f"{sil_tags[-1][1]},{len(audio)}"})
-            chunk_dict = {}
-            for i in range(len(chunks)):
-                chunk_dict[str(i)] = chunks[i]
-            return chunk_dict
+        chunks = []
+        # 第一段静音并非从头开始，补上有声片段
+        if sil_tags[0][0]:
+            chunks.append({"slice": False, "split_time": f"0,{sil_tags[0][0]}"})
+        for i in range(len(sil_tags)):
+            # 标识有声片段（跳过第一段）
+            if i:
+                chunks.append({"slice": False, "split_time": f"{sil_tags[i - 1][1]},{sil_tags[i][0]}"})
+            # 标识所有静音片段
+            chunks.append({"slice": True, "split_time": f"{sil_tags[i][0]},{sil_tags[i][1]}"})
+        # 最后一段静音并非结尾，补上结尾片段
+        if sil_tags[-1][1] != len(audio):
+            chunks.append({"slice": False, "split_time": f"{sil_tags[-1][1]},{len(audio)}"})
+        return {str(i): chunks[i] for i in range(len(chunks))}
 
 
 def cut(audio_path, db_thresh=-30, min_len=5000, win_l=300, win_s=20, max_sil_kept=500):
@@ -139,8 +135,7 @@ def cut(audio_path, db_thresh=-30, min_len=5000, win_l=300, win_s=20, max_sil_ke
         win_s=win_s,
         max_silence_kept=max_sil_kept
     )
-    chunks = slicer.slice(audio)
-    return chunks
+    return slicer.slice(audio)
 
 
 def chunks2audio(audio_path, chunks):
@@ -150,7 +145,7 @@ def chunks2audio(audio_path, chunks):
         audio = torch.mean(audio, dim=0).unsqueeze(0)
     audio = audio.cpu().numpy()[0]
     result = []
-    for k, v in chunks.items():
+    for v in chunks.values():
         tag = v["split_time"].split(",")
         result.append((v["slice"], audio[int(tag[0]):int(tag[1])]))
     return result, sr

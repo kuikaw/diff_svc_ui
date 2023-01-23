@@ -6,17 +6,16 @@ from infer_tools.infer_tool import Svc
 from infer import run_clip
 
 def r_dict_gen(project_name, key_shift, pndm_speedup, use_crepe, use_pe, thre, use_gt_mel, add_noise_step):
-    r_dict = {}
-    r_dict['project_name'] = project_name
-    r_dict['key_shift'] = key_shift
-    r_dict['pndm_speedup'] = pndm_speedup
-    r_dict['use_crepe'] = use_crepe
-    r_dict['use_pe'] = use_pe
-    r_dict['thre'] = thre
-    r_dict['use_gt_mel'] = use_gt_mel
-    r_dict['add_noise_step'] = add_noise_step
-
-    return r_dict
+    return {
+        'project_name': project_name,
+        'key_shift': key_shift,
+        'pndm_speedup': pndm_speedup,
+        'use_crepe': use_crepe,
+        'use_pe': use_pe,
+        'thre': thre,
+        'use_gt_mel': use_gt_mel,
+        'add_noise_step': add_noise_step,
+    }
 
 def model_get(singer_dir):
 
@@ -27,9 +26,6 @@ def model_get(singer_dir):
             model_list.append(os.path.join(singer_dir, file))
         elif file.endswith('.yaml'):
             singer_cfg = os.path.join(singer_dir, file)
-        else:
-            pass
-
     singer_model = max(model_list, key=os.path.getmtime)
 
     if singer_model=='' or singer_cfg=='':

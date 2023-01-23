@@ -46,8 +46,7 @@ class BaseDataset(torch.utils.data.Dataset):
     def size(self, index):
         """Return an example's size as a float or tuple. This value is used when
         filtering a dataset with ``--max-positions``."""
-        size = min(self._sizes[index], hparams['max_frames'])
-        return size
+        return min(self._sizes[index], hparams['max_frames'])
 
     def ordered_indices(self):
         """Return an ordered list of indices. Batches will be constructed based
