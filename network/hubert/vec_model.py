@@ -8,7 +8,7 @@ import torch
 
 def load_model(vec_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("load model(s) from {}".format(vec_path))
+    print(f"load model(s) from {vec_path}")
     from fairseq import checkpoint_utils
     models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
         [vec_path],
@@ -51,10 +51,8 @@ if __name__ == '__main__':
     # 这个不用改，自动在根目录下所有wav的同文件夹生成其对应的npy
     file_lists = list(Path("../../data/vecfox").rglob('*.wav'))
     nums = len(file_lists)
-    count = 0
-    for wav_path in file_lists:
+    for count, wav_path in enumerate(file_lists, start=1):
         npy_path = wav_path.with_suffix(".npy")
         npy_content = get_vec_units(vec_model, str(wav_path), device).cpu().numpy()[0]
         np.save(str(npy_path), npy_content)
-        count += 1
         print(f"hubert process：{round(count * 100 / nums, 2)}%")

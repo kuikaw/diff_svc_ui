@@ -196,27 +196,28 @@ class BaseTask(nn.Module):
         np.random.seed(hparams['seed'])
         task = cls()
         work_dir = hparams['work_dir']
-        trainer = BaseTrainer(checkpoint_callback=LatestModelCheckpoint(
-                                  filepath=work_dir,
-                                  verbose=True,
-                                  monitor='val_loss',
-                                  mode='min',
-                                  num_ckpt_keep=hparams['num_ckpt_keep'],
-                                  save_best=hparams['save_best'],
-                                  period=1 if hparams['save_ckpt'] else 100000
-                              ),
-                              logger=TensorBoardLogger(
-                                  save_dir=work_dir,
-                                  name='lightning_logs',
-                                  version='lastest'
-                              ),
-                              gradient_clip_val=hparams['clip_grad_norm'],
-                              val_check_interval=hparams['val_check_interval'],
-                              row_log_interval=hparams['log_interval'],
-                              max_updates=hparams['max_updates'],
-                              num_sanity_val_steps=hparams['num_sanity_val_steps'] if not hparams[
-                                  'validate'] else 10000,
-                              accumulate_grad_batches=hparams['accumulate_grad_batches'])
+        trainer = BaseTrainer(
+            checkpoint_callback=LatestModelCheckpoint(
+                filepath=work_dir,
+                verbose=True,
+                monitor='val_loss',
+                mode='min',
+                num_ckpt_keep=hparams['num_ckpt_keep'],
+                save_best=hparams['save_best'],
+                period=1 if hparams['save_ckpt'] else 100000,
+            ),
+            logger=TensorBoardLogger(
+                save_dir=work_dir, name='lightning_logs', version='lastest'
+            ),
+            gradient_clip_val=hparams['clip_grad_norm'],
+            val_check_interval=hparams['val_check_interval'],
+            row_log_interval=hparams['log_interval'],
+            max_updates=hparams['max_updates'],
+            num_sanity_val_steps=10000
+            if hparams['validate']
+            else hparams['num_sanity_val_steps'],
+            accumulate_grad_batches=hparams['accumulate_grad_batches'],
+        )
         if not hparams['infer']:  # train
             # copy_code = input(f'{hparams["save_codes"]} code backup? y/n: ') == 'y'
             # copy_code = True # backup code every time
@@ -326,12 +327,12 @@ class BaseTask(nn.Module):
                     norm = param_norm ** (1 / norm_type)
 
                     grad = round(norm.data.cpu().numpy().flatten()[0], 3)
-                    results['grad_{}_norm_{}'.format(norm_type, name)] = grad
+                    results[f'grad_{norm_type}_norm_{name}'] = grad
                 except Exception:
                     # this param had no grad
                     pass
 
         total_norm = total_norm ** (1. / norm_type)
         grad = round(total_norm.data.cpu().numpy().flatten()[0], 3)
-        results['grad_{}_norm_total'.format(norm_type)] = grad
+        results[f'grad_{norm_type}_norm_total'] = grad
         return results

@@ -86,7 +86,9 @@ class STFT():
 
         if fmax not in self.mel_basis:
             mel = librosa_mel_fn(sr=sampling_rate, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax)
-            self.mel_basis[str(fmax)+'_'+str(y.device)] = torch.from_numpy(mel).float().to(y.device)
+            self.mel_basis[f'{str(fmax)}_{str(y.device)}'] = (
+                torch.from_numpy(mel).float().to(y.device)
+            )
             self.hann_window[str(y.device)] = torch.hann_window(self.win_size).to(y.device)
 
         y = torch.nn.functional.pad(y.unsqueeze(1), (int((n_fft-hop_length)/2), int((n_fft-hop_length)/2)), mode='reflect')
@@ -97,7 +99,7 @@ class STFT():
         # print(111,spec)
         spec = torch.sqrt(spec.pow(2).sum(-1)+(1e-9))
         # print(222,spec)
-        spec = torch.matmul(self.mel_basis[str(fmax)+'_'+str(y.device)], spec)
+        spec = torch.matmul(self.mel_basis[f'{str(fmax)}_{str(y.device)}'], spec)
         # print(333,spec)
         spec = dynamic_range_compression_torch(spec, clip_val=clip_val)
         # print(444,spec)
@@ -105,7 +107,6 @@ class STFT():
 
     def __call__(self, audiopath):
         audio, sr = load_wav_to_torch(audiopath, target_sr=self.target_sr)
-        spect = self.get_mel(audio.unsqueeze(0)).squeeze(0)
-        return spect
+        return self.get_mel(audio.unsqueeze(0)).squeeze(0)
 
 stft = STFT()

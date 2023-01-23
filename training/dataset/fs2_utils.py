@@ -42,10 +42,9 @@ class FastSpeechDataset(BaseDataset):
         if prefix == 'test':
             if hparams['test_input_dir'] != '':
                 self.indexed_ds, self.sizes = self.load_test_inputs(hparams['test_input_dir'])
-            else:
-                if hparams['num_test_samples'] > 0:
-                    self.avail_idxs = list(range(hparams['num_test_samples'])) + hparams['test_ids']
-                    self.sizes = [self.sizes[i] for i in self.avail_idxs]
+            elif hparams['num_test_samples'] > 0:
+                self.avail_idxs = list(range(hparams['num_test_samples'])) + hparams['test_ids']
+                self.sizes = [self.sizes[i] for i in self.avail_idxs]
 
         if hparams['pitch_type'] == 'cwt':
             _, hparams['cwt_scales'] = get_lf0_cwt(np.ones(10))
@@ -117,7 +116,7 @@ class FastSpeechDataset(BaseDataset):
         uv = utils.collate_1d([s['uv'] for s in samples])
         energy = utils.collate_1d([s['energy'] for s in samples], 0.0)
         mel2ph = utils.collate_1d([s['mel2ph'] for s in samples], 0.0) \
-            if samples[0]['mel2ph'] is not None else None
+                if samples[0]['mel2ph'] is not None else None
         mels = utils.collate_2d([s['mel'] for s in samples], 0.0)
         txt_lengths = torch.LongTensor([s['txt_token'].numel() for s in samples])
         mel_lengths = torch.LongTensor([s['mel'].shape[0] for s in samples])
@@ -148,7 +147,7 @@ class FastSpeechDataset(BaseDataset):
             cwt_spec = utils.collate_2d([s['cwt_spec'] for s in samples])
             f0_mean = torch.Tensor([s['f0_mean'] for s in samples])
             f0_std = torch.Tensor([s['f0_std'] for s in samples])
-            batch.update({'cwt_spec': cwt_spec, 'f0_mean': f0_mean, 'f0_std': f0_std})
+            batch |= {'cwt_spec': cwt_spec, 'f0_mean': f0_mean, 'f0_std': f0_std}
         elif self.hparams['pitch_type'] == 'ph':
             batch['f0'] = utils.collate_1d([s['f0_ph'] for s in samples])
 
@@ -165,9 +164,9 @@ class FastSpeechDataset(BaseDataset):
         binarizer_cls = getattr(importlib.import_module(pkg), cls_name)
         binarization_args = hparams['binarization_args']
         from preprocessing.hubertinfer import Hubertencoder
+        ph = txt = tg_fn = ''
         for wav_fn in inp_wav_paths:
             item_name = os.path.basename(wav_fn)
-            ph = txt = tg_fn = ''
             wav_fn = wav_fn
             encoder = Hubertencoder(hparams['hubert_path'])
 

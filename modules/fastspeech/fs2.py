@@ -56,7 +56,7 @@ class FastSpeech2(nn.Module):
                 h = hparams['cwt_hidden_size']
                 cwt_out_dims = 10
                 if hparams['use_uv']:
-                    cwt_out_dims = cwt_out_dims + 1
+                    cwt_out_dims += 1
                 self.cwt_predictor = nn.Sequential(
                     nn.Linear(self.hidden_size, h),
                     PitchPredictor(
@@ -94,7 +94,6 @@ class FastSpeech2(nn.Module):
     def forward(self, hubert, mel2ph=None, spk_embed=None,
                 ref_mels=None, f0=None, uv=None, energy=None, skip_decoder=True,
                 spk_embed_dur_id=None, spk_embed_f0_id=None, infer=False, **kwargs):
-        ret = {}
         if not hparams['no_fs2'] if 'no_fs2' in hparams.keys() else True:
             encoder_out =self.encoder(hubert)  # [B, T, C]
         else:
@@ -124,12 +123,7 @@ class FastSpeech2(nn.Module):
         else:
             spk_embed_dur = spk_embed_f0 = spk_embed = 0
 
-        # add dur
-        # dur_inp = (encoder_out + var_embed + spk_embed_dur) * src_nonpadding
-
-        # mel2ph = self.add_dur(dur_inp, mel2ph, hubert, ret)
-        ret['mel2ph'] = mel2ph
-
+        ret = {'mel2ph': mel2ph}
         decoder_inp = F.pad(encoder_out, [0, 0, 1, 0])
 
         mel2ph_ = mel2ph[..., None].repeat([1, 1, encoder_out.shape[-1]])
@@ -176,8 +170,7 @@ class FastSpeech2(nn.Module):
         f0 = cwt2f0(cwt_spec, mean, std, hparams['cwt_scales'])
         f0 = torch.cat(
             [f0] + [f0[:, -1:]] * (mel2ph.shape[1] - f0.shape[1]), 1)
-        f0_norm = norm_f0(f0, None, hparams)
-        return f0_norm
+        return norm_f0(f0, None, hparams)
 
     def out2mel(self, out):
         return out
@@ -195,7 +188,7 @@ class FastSpeech2(nn.Module):
         #     pitch = torch.gather(pitch, 1, mel2ph)  # [B, T_mel]
         #     pitch_embedding = pitch_embed(pitch)
         #     return pitch_embedding
-        
+
         decoder_inp = decoder_inp.detach() + hparams['predictor_grad'] * (decoder_inp - decoder_inp.detach())
 
         pitch_padding = (mel2ph == 0)
@@ -229,13 +222,10 @@ class FastSpeech2(nn.Module):
         ret['f0_denorm'] = f0_denorm = denorm_f0(f0, uv, hparams, pitch_padding=pitch_padding)
         if pitch_padding is not None:
             f0[pitch_padding] = 0
-        
+
         pitch = f0_to_coarse(f0_denorm,hparams)  # start from 0
         ret['pitch_pred']=pitch.unsqueeze(-1)
-        # print(ret['pitch_pred'].shape)
-        # print(pitch.shape)
-        pitch_embedding = self.pitch_embed(pitch)
-        return pitch_embedding
+        return self.pitch_embed(pitch)
 
     def add_energy(self,decoder_inp, energy, ret):
         decoder_inp = decoder_inp.detach() + hparams['predictor_grad'] * (decoder_inp - decoder_inp.detach())
@@ -243,8 +233,7 @@ class FastSpeech2(nn.Module):
         # if energy is None:
         #     energy = energy_pred
         energy = torch.clamp(energy * 256 // 4, max=255).long() # energy_to_coarse
-        energy_embedding = self.energy_embed(energy)
-        return energy_embedding
+        return self.energy_embed(energy)
 
     @staticmethod
     def mel_norm(x):

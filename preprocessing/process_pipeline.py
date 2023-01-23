@@ -23,7 +23,7 @@ class File2Batch:
         '''
         raw_data_dir = Path(hparams['raw_data_dir'])
         # meta_midi = json.load(open(os.path.join(raw_data_dir, 'meta.json')))   # [list of dict]
-        
+
         # if hparams['perform_enhance'] and not hparams['infer']:
         #     vocoder=get_vocoder_cls(hparams)()
         #     raw_files = list(raw_data_dir.rglob(f"*.wav"))
@@ -45,9 +45,8 @@ class File2Batch:
         #         f0[f0>0]=f0[f0>0]*(2**(2/12))
         #         wav_pred=vocoder.spec2wav(torch.FloatTensor(mel),f0=torch.FloatTensor(f0))
         #         sf.write(file.with_name(file.name[:-4]+'_high.wav'), wav_pred, 24000, 'PCM_16')
-        utterance_labels =[]
-        utterance_labels.extend(list(raw_data_dir.rglob(f"*.wav")))
-        utterance_labels.extend(list(raw_data_dir.rglob(f"*.ogg")))
+        utterance_labels = list(list(raw_data_dir.rglob("*.wav")))
+        utterance_labels.extend(list(raw_data_dir.rglob("*.ogg")))
         #open(os.path.join(raw_data_dir, 'transcriptions.txt'), encoding='utf-8').readlines()
 
         all_temp_dict = {}
@@ -55,23 +54,7 @@ class File2Batch:
             #song_info = utterance_label.split('|')
             item_name =str(utterance_label)#raw_item_name = song_info[0]
             # print(item_name)
-            temp_dict = {}
-            temp_dict['wav_fn'] =str(utterance_label)#f'{raw_data_dir}/wavs/{item_name}.wav'
-            # temp_dict['txt'] = song_info[1]
-
-            # temp_dict['ph'] = song_info[2]
-            # # self.item2wdb[item_name] = list(np.nonzero([1 if x in ALL_YUNMU + ['AP', 'SP'] else 0 for x in song_info[2].split()])[0])
-            # temp_dict['word_boundary'] = np.array([1 if x in ALL_YUNMU + ['AP', 'SP'] else 0 for x in song_info[2].split()])
-            # temp_dict['ph_durs'] = [float(x) for x in song_info[5].split(" ")]
-
-            # temp_dict['pitch_midi'] = np.array([note_to_midi(x.split("/")[0]) if x != 'rest' else 0
-            #                        for x in song_info[3].split(" ")])
-            # temp_dict['midi_dur'] = np.array([float(x) for x in song_info[4].split(" ")])
-            # temp_dict['is_slur'] = np.array([int(x) for x in song_info[6].split(" ")])
-            temp_dict['spk_id'] = hparams['speaker_id']
-            # assert temp_dict['pitch_midi'].shape == temp_dict['midi_dur'].shape == temp_dict['is_slur'].shape, \
-                # (temp_dict['pitch_midi'].shape, temp_dict['midi_dur'].shape, temp_dict['is_slur'].shape)
-
+            temp_dict = {'wav_fn': str(utterance_label), 'spk_id': hparams['speaker_id']}
             all_temp_dict[item_name] = temp_dict
 
         return all_temp_dict
@@ -91,7 +74,7 @@ class File2Batch:
                 raise BinarizationError("Empty **gt** f0")
             processed_input['f0'] = gt_f0
             processed_input['pitch'] = gt_pitch_coarse
-    
+
         def get_align(meta_data, mel, phone_encoded, hop_size=hparams['hop_size'], audio_sample_rate=hparams['audio_sample_rate']):
             mel2ph = np.zeros([mel.shape[0]], int)
             start_frame=0
@@ -99,7 +82,7 @@ class File2Batch:
             if hparams['debug']:
                 print(mel.shape,phone_encoded.shape,mel.shape[0]/phone_encoded.shape[0])
             for i_ph in range(phone_encoded.shape[0]):
-                
+
                 end_frame = int(i_ph*ph_durs +ph_durs+ 0.5)
                 mel2ph[start_frame:end_frame+1] = i_ph + 1
                 start_frame = end_frame+1
@@ -126,7 +109,7 @@ class File2Batch:
                     hubert_encoded = processed_input['hubert'] = encoder.encode(temp_dict['wav_fn'])
                 except:
                     traceback.print_exc()
-                    raise Exception(f"hubert encode error")
+                    raise Exception("hubert encode error")
                 if binarization_args['with_align']:
                     get_align(temp_dict, mel, hubert_encoded)
         except Exception as e:
@@ -154,20 +137,20 @@ class File2Batch:
         uv = utils.collate_1d([s['uv'] for s in samples])
         energy = utils.collate_1d([s['energy'] for s in samples], 0.0)
         mel2ph = utils.collate_1d([s['mel2ph'] for s in samples], 0.0) \
-            if samples[0]['mel2ph'] is not None else None
+                if samples[0]['mel2ph'] is not None else None
         mels = utils.collate_2d([s['mel'] for s in samples], 0.0)
         #txt_lengths = torch.LongTensor([s['txt_token'].numel() for s in samples])
         hubert_lengths = torch.LongTensor([s['hubert'].shape[0] for s in samples])
         mel_lengths = torch.LongTensor([s['mel'].shape[0] for s in samples])
 
-        batch = {
+        return {
             'id': id,
             'item_name': item_names,
             'nsamples': len(samples),
             # 'text': text,
             # 'txt_tokens': txt_tokens,
             # 'txt_lengths': txt_lengths,
-            'hubert':hubert,
+            'hubert': hubert,
             'mels': mels,
             'mel_lengths': mel_lengths,
             'mel2ph': mel2ph,
@@ -176,24 +159,3 @@ class File2Batch:
             'f0': f0,
             'uv': uv,
         }
-        #========not used=================
-        # if hparams['use_spk_embed']:
-        #     spk_embed = torch.stack([s['spk_embed'] for s in samples])
-        #     batch['spk_embed'] = spk_embed
-        # if hparams['use_spk_id']:
-        #     spk_ids = torch.LongTensor([s['spk_id'] for s in samples])
-        #     batch['spk_ids'] = spk_ids
-        # if hparams['pitch_type'] == 'cwt':
-        #     cwt_spec = utils.collate_2d([s['cwt_spec'] for s in samples])
-        #     f0_mean = torch.Tensor([s['f0_mean'] for s in samples])
-        #     f0_std = torch.Tensor([s['f0_std'] for s in samples])
-        #     batch.update({'cwt_spec': cwt_spec, 'f0_mean': f0_mean, 'f0_std': f0_std})
-        # elif hparams['pitch_type'] == 'ph':
-        #     batch['f0'] = utils.collate_1d([s['f0_ph'] for s in samples])
-
-        # batch['pitch_midi'] = utils.collate_1d([s['pitch_midi'] for s in samples], 0)
-        # batch['midi_dur'] = utils.collate_1d([s['midi_dur'] for s in samples], 0)
-        # batch['is_slur'] = utils.collate_1d([s['is_slur'] for s in samples], 0)
-        # batch['word_boundary'] = utils.collate_1d([s['word_boundary'] for s in samples], 0)
-
-        return batch

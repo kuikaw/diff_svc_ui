@@ -75,7 +75,7 @@ def format_wav(audio_path):
 
 def fill_a_to_b(a, b):
     if len(a) < len(b):
-        for _ in range(0, len(b) - len(a)):
+        for _ in range(len(b) - len(a)):
             a.append(a[0])
 
 
@@ -84,9 +84,11 @@ def get_end_file(dir_path, end):
     for root, dirs, files in os.walk(dir_path):
         files = [f for f in files if f[0] != '.']
         dirs[:] = [d for d in dirs if d[0] != '.']
-        for f_file in files:
-            if f_file.endswith(end):
-                file_lists.append(os.path.join(root, f_file).replace("\\", "/"))
+        file_lists.extend(
+            os.path.join(root, f_file).replace("\\", "/")
+            for f_file in files
+            if f_file.endswith(end)
+        )
     return file_lists
 
 
@@ -140,7 +142,11 @@ class Svc:
 
     def infer(self, in_path, key, acc, use_pe=True, use_crepe=True, thre=0.05, singer=False, **kwargs):
         batch = self.pre(in_path, acc, use_crepe, thre)
-        spk_embed = batch.get('spk_embed') if not hparams['use_spk_id'] else batch.get('spk_ids')
+        spk_embed = (
+            batch.get('spk_ids')
+            if hparams['use_spk_id']
+            else batch.get('spk_embed')
+        )
         hubert = batch['hubert']
         ref_mels = batch["mels"]
         energy=batch['energy']
@@ -156,6 +162,7 @@ class Svc:
                 ref_mels=ref_mels.cuda(),
                 infer=True, **kwargs)
             return outputs
+
         outputs=diff_infer()
         batch['outputs'] = self.model.out2mel(outputs['mel_out'])
         batch['mel2ph_pred'] = outputs['mel2ph']
@@ -192,8 +199,8 @@ class Svc:
 
         if singer:
             data_path = in_path.replace("batch", "singer_data")
-            mel_path = data_path[:-4] + "_mel.npy"
-            f0_path = data_path[:-4] + "_f0.npy"
+            mel_path = f"{data_path[:-4]}_mel.npy"
+            f0_path = f"{data_path[:-4]}_f0.npy"
             np.save(mel_path, mel_pred)
             np.save(f0_path, f0_pred)
         wav_pred = self.vocoder.spec2wav(mel_pred, f0=f0_pred)
@@ -273,8 +280,7 @@ class Svc:
 
         temp_dict = self.temporary_dict2processed_input(item_name, temp_dict, use_crepe, thre)
         hparams['pndm_speedup'] = accelerate
-        batch = processed_input2batch([getitem(temp_dict)])
-        return batch
+        return processed_input2batch([getitem(temp_dict)])
 
 
 def getitem(item):
@@ -285,7 +291,7 @@ def getitem(item):
     f0, uv = norm_interp_f0(item["f0"][:max_frames], hparams)
     hubert = torch.Tensor(item['hubert'][:hparams['max_input_tokens']])
     pitch = torch.LongTensor(item.get("pitch"))[:max_frames]
-    sample = {
+    return {
         "item_name": item['item_name'],
         "hubert": hubert,
         "mel": spec,
@@ -296,7 +302,6 @@ def getitem(item):
         "mel2ph": mel2ph,
         "mel_nonpadding": spec.abs().sum(-1) > 0,
     }
-    return sample
 
 
 def processed_input2batch(samples):
@@ -319,7 +324,7 @@ def processed_input2batch(samples):
     mels = utils.collate_2d([s['mel'] for s in samples], 0.0)
     mel_lengths = torch.LongTensor([s['mel'].shape[0] for s in samples])
 
-    batch = {
+    return {
         'item_name': item_names,
         'nsamples': len(samples),
         'hubert': hubert,
@@ -331,4 +336,3 @@ def processed_input2batch(samples):
         'f0': f0,
         'uv': uv,
     }
-    return batch

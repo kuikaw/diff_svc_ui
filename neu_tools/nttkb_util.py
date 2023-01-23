@@ -27,7 +27,7 @@ def verify_int(event):
     try:
         v = int(v)
     except ValueError:
-        if v != '\x08' and v != '':
+        if v not in ['\x08', '']:
             return 'break'
 
 #verifies input as float and prevents entry of non-numeric characters
@@ -36,13 +36,13 @@ def verify_float(event):
     try:
         v = float(v)
     except ValueError:
-        if v != '\x08' and v != '':
+        if v not in ['\x08', '']:
             return 'break'
 
 #turns a given yaml file, in the cwd, into a dictionary file. 
 #i use this to keep my scripts looking cleaner.
 def yaml_dict(name):
-    with open(os.path.join(os.getcwd(), name + '.yaml'), 'r', encoding='utf-8') as dicky:
+    with open(os.path.join(os.getcwd(), f'{name}.yaml'), 'r', encoding='utf-8') as dicky:
         dictionary = yaml.safe_load(dicky)
 
     return dictionary

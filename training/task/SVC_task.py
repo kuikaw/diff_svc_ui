@@ -78,16 +78,11 @@ class SVCTask(FastSpeech2Task):
         uv = sample['uv']
         energy = sample['energy']
 
-        spk_embed = sample.get('spk_embed') if not hparams['use_spk_id'] else sample.get('spk_ids')
-        if hparams['pitch_type'] == 'cwt':
-            # NOTE: this part of script is *isolated* from other scripts, which means
-            #       it may not be compatible with the current version.    
-            pass
-            # cwt_spec = sample[f'cwt_spec']
-            # f0_mean = sample['f0_mean']
-            # f0_std = sample['f0_std']
-            # sample['f0_cwt'] = f0 = model.cwt2f0_norm(cwt_spec, f0_mean, f0_std, mel2ph)
-
+        spk_embed = (
+            sample.get('spk_ids')
+            if hparams['use_spk_id']
+            else sample.get('spk_embed')
+        )
         # output == ret
         # model == src.diff.diffusion.GaussianDiffusion
         output = model(hubert, mel2ph=mel2ph, spk_embed=spk_embed,
@@ -101,14 +96,15 @@ class SVCTask(FastSpeech2Task):
         #     self.add_pitch_loss(output, sample, losses)
         # if hparams['use_energy_embed']:
         #     self.add_energy_loss(output['energy_pred'], energy, losses)
-        if not return_output:
-            return losses
-        else:
-            return losses, output
+        return (losses, output) if return_output else losses
     
     def _training_step(self, sample, batch_idx, _):
         log_outputs = self.run_model(self.model, sample)
-        total_loss = sum([v for v in log_outputs.values() if isinstance(v, torch.Tensor) and v.requires_grad])
+        total_loss = sum(
+            v
+            for v in log_outputs.values()
+            if isinstance(v, torch.Tensor) and v.requires_grad
+        )
         log_outputs['batch_size'] = sample['hubert'].size()[0]
         log_outputs['lr'] = self.scheduler.get_lr()[0]
         return total_loss, log_outputs
@@ -125,17 +121,19 @@ class SVCTask(FastSpeech2Task):
             self.scheduler.step(self.global_step // hparams['accumulate_grad_batches'])
 
     def validation_step(self, sample, batch_idx):
-        outputs = {}
         hubert = sample['hubert']  # [B, T_t]
 
         target = sample['mels']  # [B, T_s, 80]
         energy = sample['energy']
         # fs2_mel = sample['fs2_mels']
-        spk_embed = sample.get('spk_embed') if not hparams['use_spk_id'] else sample.get('spk_ids')
+        spk_embed = (
+            sample.get('spk_ids')
+            if hparams['use_spk_id']
+            else sample.get('spk_embed')
+        )
         mel2ph = sample['mel2ph']
 
-        outputs['losses'] = {}
-
+        outputs = {'losses': {}}
         outputs['losses'], model_out = self.run_model(self.model, sample, return_output=True, infer=False)
 
         outputs['total_loss'] = sum(outputs['losses'].values())
@@ -180,15 +178,13 @@ class SVCTask(FastSpeech2Task):
             is_sil = is_sil | (txt_tokens == self.phone_encoder.encode(p)[0])
         is_sil = is_sil.float()  # [B, T_txt]
 
-        # phone duration loss
-        if hparams['dur_loss'] == 'mse':
-            losses['pdur'] = F.mse_loss(dur_pred, (dur_gt + 1).log(), reduction='none')
-            losses['pdur'] = (losses['pdur'] * nonpadding).sum() / nonpadding.sum()
-            losses['pdur'] = losses['pdur'] * hparams['lambda_ph_dur']
-            dur_pred = (dur_pred.exp() - 1).clamp(min=0)
-        else:
+        if hparams['dur_loss'] != 'mse':
             raise NotImplementedError
 
+        losses['pdur'] = F.mse_loss(dur_pred, (dur_gt + 1).log(), reduction='none')
+        losses['pdur'] = (losses['pdur'] * nonpadding).sum() / nonpadding.sum()
+        losses['pdur'] = losses['pdur'] * hparams['lambda_ph_dur']
+        dur_pred = (dur_pred.exp() - 1).clamp(min=0)
         # use linear scale for sent and word duration
         if hparams['lambda_word_dur'] > 0:
             #idx = F.pad(wdb.cumsum(axis=1), (1, 0))[:, :-1]

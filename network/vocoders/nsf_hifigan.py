@@ -69,8 +69,7 @@ class NsfHifiGAN(BaseVocoder):
                 y = self.model(c, f0).view(-1)
             else:
                 y = self.model(c).view(-1)
-        wav_out = y.cpu().numpy()
-        return wav_out
+        return y.cpu().numpy()
 
     @staticmethod
     def wav2spec(inp_path, device=None):

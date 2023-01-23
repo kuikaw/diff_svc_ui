@@ -16,7 +16,7 @@ chunks_dict = infer_tool.read_temp("./infer_tools/new_chunks_temp.json")
 
 def run_clip(svc_model, key, acc, use_pe, use_crepe, thre, use_gt_mel, add_noise_step, project_name='', f_name=None,
              file_path=None, out_path=None, slice_db=-40,**kwargs):
-    print(f'code version:2022-12-04')
+    print('code version:2022-12-04')
     use_pe = use_pe if hparams['audio_sample_rate'] == 24000 else False
     if file_path is None:
         raw_audio_path = f"./raw/{f_name}"
@@ -38,11 +38,10 @@ def run_clip(svc_model, key, acc, use_pe, use_crepe, thre, use_gt_mel, add_noise
     infer_tool.write_temp("./infer_tools/new_chunks_temp.json", chunks_dict)
     audio_data, audio_sr = slicer.chunks2audio(wav_path, chunks)
 
-    count = 0
     f0_tst = []
     f0_pred = []
     audio = []
-    for (slice_tag, data) in audio_data:
+    for count, (slice_tag, data) in enumerate(audio_data):
         print(f'#=====segment start, {round(len(data) / audio_sr, 3)}s======')
         length = int(np.ceil(len(data) / audio_sr * hparams['audio_sample_rate']))
         raw_path = io.BytesIO()
@@ -64,7 +63,6 @@ def run_clip(svc_model, key, acc, use_pe, use_crepe, thre, use_gt_mel, add_noise
         f0_tst.extend(_f0_tst)
         f0_pred.extend(_f0_pred)
         audio.extend(list(fix_audio))
-        count += 1
     if out_path is None:
         out_path = f'./results/{clean_name}_{key}key_{project_name}_{hparams["residual_channels"]}_{hparams["residual_layers"]}_{int(step / 1000)}k_{accelerate}x.{kwargs["format"]}'
     soundfile.write(out_path, audio, hparams["audio_sample_rate"], 'PCM_16',format=out_path.split('.')[-1])

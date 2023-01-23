@@ -24,12 +24,13 @@ class Batch2Loss:
 
     @staticmethod
     def module1(fs2_encoder, # modules
-                txt_tokens, midi_embedding, midi_dur_embedding, slur_embedding): # variables
+                txt_tokens, midi_embedding, midi_dur_embedding, slur_embedding):    # variables
         '''
             get *encoder_out* == fs2_encoder(*txt_tokens*, some embeddings)
         '''
-        encoder_out = fs2_encoder(txt_tokens, midi_embedding, midi_dur_embedding, slur_embedding)
-        return encoder_out
+        return fs2_encoder(
+            txt_tokens, midi_embedding, midi_dur_embedding, slur_embedding
+        )
 
     @staticmethod
     def insert2(encoder_out, spk_embed_id, spk_embed_dur_id, spk_embed_f0_id, src_nonpadding, # variables

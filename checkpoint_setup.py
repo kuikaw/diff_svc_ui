@@ -11,9 +11,7 @@ output='checkpoints.zip'
 
 gdown.download(id=id, output=output, quiet=False)
 
-if os.path.exists('checkpoints'):
-	pass
-else:
+if not os.path.exists('checkpoints'):
 	os.mkdir('checkpoints')
 
 with ZipFile('checkpoints.zip') as ckpt:

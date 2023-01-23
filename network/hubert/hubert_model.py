@@ -236,10 +236,7 @@ def get_units(hbt_soft, raw_wav_path, dev=torch.device('cuda')):
     assert (sr >= 16000)
     if len(wav.shape) > 1:
         wav = librosa.to_mono(wav)
-    if sr != 16000:
-        wav16 = librosa.resample(wav, sr, 16000)
-    else:
-        wav16 = wav
+    wav16 = librosa.resample(wav, sr, 16000) if sr != 16000 else wav
     dev = torch.device("cuda" if (dev == torch.device('cuda') and torch.cuda.is_available()) else "cpu")
     torch.cuda.is_available() and torch.cuda.empty_cache()
     with torch.inference_mode():
@@ -252,9 +249,11 @@ def get_end_file(dir_path, end):
     for root, dirs, files in os.walk(dir_path):
         files = [f for f in files if f[0] != '.']
         dirs[:] = [d for d in dirs if d[0] != '.']
-        for f_file in files:
-            if f_file.endswith(end):
-                file_list.append(os.path.join(root, f_file).replace("\\", "/"))
+        file_list.extend(
+            os.path.join(root, f_file).replace("\\", "/")
+            for f_file in files
+            if f_file.endswith(end)
+        )
     return file_list
 
 
@@ -267,10 +266,8 @@ if __name__ == '__main__':
     # 这个不用改，自动在根目录下所有wav的同文件夹生成其对应的npy
     file_lists = list(Path(hparams['raw_data_dir']).rglob('*.wav'))
     nums = len(file_lists)
-    count = 0
-    for wav_path in file_lists:
+    for count, wav_path in enumerate(file_lists, start=1):
         npy_path = wav_path.with_suffix(".npy")
         npy_content = get_units(hbt_model, wav_path).cpu().numpy()[0]
         np.save(str(npy_path), npy_content)
-        count += 1
         print(f"hubert process：{round(count * 100 / nums, 2)}%")

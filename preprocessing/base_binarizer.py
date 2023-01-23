@@ -42,20 +42,23 @@ class BaseBinarizer:
     def __init__(self, item_attributes=BASE_ITEM_ATTRIBUTES):
         self.binarization_args = hparams['binarization_args']
         #self.pre_align_args = hparams['pre_align_args']
-        
+
         self.items = {}
         # every item in self.items has some attributes
         self.item_attributes = item_attributes
 
         self.load_meta_data()
         # check program correctness 检查itemdict的key只能在给定的列表中取值
-        assert all([attr in self.item_attributes for attr in list(self.items.values())[0].keys()])
+        assert all(
+            attr in self.item_attributes
+            for attr in list(self.items.values())[0].keys()
+        )
         self.item_names = sorted(list(self.items.keys()))
-        
+
         if self.binarization_args['shuffle']:
             random.seed(1234)
             random.shuffle(self.item_names)
-        
+
         # set default get_pitch algorithm
         if hparams['use_crepe']:
             self.get_pitch_algorithm = get_pitch_crepe
@@ -78,12 +81,9 @@ class BaseBinarizer:
         raise NotImplementedError
 
     def build_spk_map(self):
-        spk_map = set()
-        for item_name in self.item_names:
-            spk_name = self.items[item_name]['spk_id']
-            spk_map.add(spk_name)
+        spk_map = {self.items[item_name]['spk_id'] for item_name in self.item_names}
         spk_map = {x: i for i, x in enumerate(sorted(list(spk_map)))}
-        assert len(spk_map) == 0 or len(spk_map) <= hparams['num_spk'], len(spk_map)
+        assert not spk_map or len(spk_map) <= hparams['num_spk'], len(spk_map)
         return spk_map
 
     def item_name2spk_id(self, item_name):
@@ -94,20 +94,6 @@ class BaseBinarizer:
         use hubert encoder
         '''
         raise NotImplementedError
-        '''
-            create 'phone_set.json' file if it doesn't exist
-        '''
-        ph_set_fn = f"{hparams['binary_data_dir']}/phone_set.json"
-        ph_set = []
-        if hparams['reset_phone_dict'] or not os.path.exists(ph_set_fn):
-            self.load_ph_set(ph_set)
-            ph_set = sorted(set(ph_set))
-            json.dump(ph_set, open(ph_set_fn, 'w', encoding='utf-8'))
-            print("| Build phone set: ", ph_set)
-        else:
-            ph_set = json.load(open(ph_set_fn, 'r', encoding='utf-8'))
-            print("| Load phone set: ", ph_set)
-        return build_phone_encoder(hparams['binary_data_dir'])
     
 
     def load_ph_set(self, ph_set):
@@ -138,16 +124,13 @@ class BaseBinarizer:
 
     def process_data_split(self, prefix):
         data_dir = hparams['binary_data_dir']
-        args = []
         builder = IndexedDatasetBuilder(f'{data_dir}/{prefix}')
         lengths = []
-        f0s = []
         total_sec = 0
-        # if self.binarization_args['with_spk_embed']:
-        #     voice_encoder = VoiceEncoder().cuda()
-
-        for item_name, meta_data in self.meta_data_iterator(prefix):
-            args.append([item_name, meta_data, self.binarization_args])
+        args = [
+            [item_name, meta_data, self.binarization_args]
+            for item_name, meta_data in self.meta_data_iterator(prefix)
+        ]
         spec_min=[]
         spec_max=[]
         # code for single cpu processing
@@ -183,7 +166,7 @@ class BaseBinarizer:
                 yaml.safe_dump(_hparams,f)
         builder.finalize()
         np.save(f'{data_dir}/{prefix}_lengths.npy', lengths)
-        if len(f0s) > 0:
+        if f0s := []:
             f0s = np.concatenate(f0s, 0)
             f0s = f0s[f0s != 0]
             np.save(f'{data_dir}/{prefix}_f0s_mean_std.npy', [np.mean(f0s).item(), np.std(f0s).item()])
@@ -202,16 +185,6 @@ class BaseBinarizer:
                   it may not be compatible with the current version.
         '''
         return
-        tg_fn, ph = meta_data['tg_fn'], meta_data['ph']
-        if tg_fn is not None and os.path.exists(tg_fn):
-            mel2ph, dur = get_mel2ph(tg_fn, ph, mel, hparams)
-        else:
-            raise BinarizationError(f"Align not found")
-        if mel2ph.max() - 1 >= len(phone_encoded):
-            raise BinarizationError(
-                f"Align does not match: mel2ph.max() - 1: {mel2ph.max() - 1}, len(phone_encoded): {len(phone_encoded)}")
-        res['mel2ph'] = mel2ph
-        res['dur'] = dur
 
     def get_f0cwt(self, f0, res):
         '''
@@ -219,17 +192,6 @@ class BaseBinarizer:
                   it may not be compatible with the current version.
         '''
         return
-        from utils.cwt import get_cont_lf0, get_lf0_cwt
-        uv, cont_lf0_lpf = get_cont_lf0(f0)
-        logf0s_mean_org, logf0s_std_org = np.mean(cont_lf0_lpf), np.std(cont_lf0_lpf)
-        cont_lf0_lpf_norm = (cont_lf0_lpf - logf0s_mean_org) / logf0s_std_org
-        Wavelet_lf0, scales = get_lf0_cwt(cont_lf0_lpf_norm)
-        if np.any(np.isnan(Wavelet_lf0)):
-            raise BinarizationError("NaN CWT")
-        res['cwt_spec'] = Wavelet_lf0
-        res['cwt_scales'] = scales
-        res['f0_mean'] = logf0s_mean_org
-        res['f0_std'] = logf0s_std_org
 
 
 if __name__ == "__main__":
